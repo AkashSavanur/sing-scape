@@ -1,15 +1,53 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import supabase from "../helper/SupabaseClient";
+import Swal from "sweetalert2";
+
 
 const Navbar = () => {
   const navigate = useNavigate();
-  // 从localStorage获取用户信息（假设登录时存储了用户数据）
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+
+    fetchUser();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You will be signed out.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#000000",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, sign me out"
+    });
+  
+    if (result.isConfirmed) {
+      await supabase.auth.signOut();
+      setUser(null);
+      Swal.fire("Signed out!", "You have been successfully signed out.", "success");
+      navigate("/login");
+    }
+  };
 
   return (
     <header
       style={{
-        position: 'sticky',
+        position: "sticky",
         backgroundColor: "#fff",
         color: "black",
         display: "flex",
@@ -21,105 +59,56 @@ const Navbar = () => {
         boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
       }}
     >
-      {/* SingScape Logo */}
       <span onClick={() => navigate('/home')} style={{ cursor: "pointer" }}>
         SingScape
       </span>
 
-      {/* Navigation Buttons */}
       <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-        {/* 管理员专属按钮 */}
-        {user?.isAdmin && (
+        {/* Optional admin check (if you store role info in user metadata) */}
+        {user?.user_metadata?.isAdmin && (
           <button
-            style={{
-              backgroundColor: "transparent",
-              border: "2px solid black",
-              padding: "8px 16px",
-              fontSize: "16px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              borderRadius: "5px",
-              transition: "all 0.3s ease",
-              color: "black"
-            }}
+            style={buttonStyle}
             onClick={() => navigate("/admin/manage-review")}
           >
             Manage Reviews
           </button>
         )}
 
-        {/* Customer Support Button */}
         <button
-          style={{
-            backgroundColor: "transparent",
-            border: "2px solid black",
-            padding: "8px 16px",
-            fontSize: "16px",
-            fontWeight: "bold",
-            cursor: "pointer",
-            borderRadius: "5px",
-            transition: "all 0.3s ease",
-            color: "black"
-          }}
+          style={buttonStyle}
           onClick={() => navigate("/customer-support")}
         >
           Customer Support
         </button>
 
-        {/* Profile Button */}
-        {user?.token && (
-          <button
-            style={{
-              backgroundColor: "black",
-              color: "white",
-              border: "none",
-              padding: "8px 16px",
-              fontSize: "16px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              borderRadius: "5px",
-              transition: "all 0.3s ease",
-            }}
-            onMouseOver={(e) => (e.target.style.backgroundColor = "#333")}
-            onMouseOut={(e) => (e.target.style.backgroundColor = "black")}
-            onClick={() => navigate(`/profile`)}
-          >
-            Profile
-          </button>
-        )}
-
-        {/* 登录/注册按钮 */}
-        {!user?.token && (
+        {user ? (
           <>
             <button
-              style={{
-                backgroundColor: "transparent",
-                border: "2px solid black",
-                padding: "8px 16px",
-                fontSize: "16px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                borderRadius: "5px",
-                transition: "all 0.3s ease",
-                color: "black"
-              }}
+              style={filledButtonStyle}
+              onMouseOver={(e) => (e.target.style.backgroundColor = "#333")}
+              onMouseOut={(e) => (e.target.style.backgroundColor = "black")}
+              onClick={() => navigate("/profile")}
+            >
+              Profile
+            </button>
+
+            <button
+              style={buttonStyle}
+              onClick={handleSignOut}
+            >
+              Sign Out
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              style={buttonStyle}
               onClick={() => navigate("/login")}
             >
               Login
             </button>
-
             <button
-              style={{
-                backgroundColor: "black",
-                color: "white",
-                border: "none",
-                padding: "8px 16px",
-                fontSize: "16px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                borderRadius: "5px",
-                transition: "all 0.3s ease",
-              }}
+              style={filledButtonStyle}
               onMouseOver={(e) => (e.target.style.backgroundColor = "#333")}
               onMouseOut={(e) => (e.target.style.backgroundColor = "black")}
               onClick={() => navigate("/signup")}
@@ -131,6 +120,30 @@ const Navbar = () => {
       </div>
     </header>
   );
+};
+
+const buttonStyle = {
+  backgroundColor: "transparent",
+  border: "2px solid black",
+  padding: "8px 16px",
+  fontSize: "16px",
+  fontWeight: "bold",
+  cursor: "pointer",
+  borderRadius: "5px",
+  transition: "all 0.3s ease",
+  color: "black"
+};
+
+const filledButtonStyle = {
+  backgroundColor: "black",
+  color: "white",
+  border: "none",
+  padding: "8px 16px",
+  fontSize: "16px",
+  fontWeight: "bold",
+  cursor: "pointer",
+  borderRadius: "5px",
+  transition: "all 0.3s ease",
 };
 
 export default Navbar;

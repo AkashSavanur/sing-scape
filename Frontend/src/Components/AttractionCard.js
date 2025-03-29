@@ -10,12 +10,19 @@ const AttractionCard = ({ attraction }) => {
   const navigate = useNavigate();
 
   const handleBooking = () => {
-    navigate(`/attraction/${attraction.id}`); 
+    navigate(`/attraction/${encodeURIComponent(attraction.name)}`);
   };
+
+  const imageSrc = `/Images/${attraction.name}.jpeg` || placeholderImage;
 
   return (
     <Card style={{ width: 300, margin: "16px", boxShadow: "0px 4px 10px rgba(0,0,0,0.1)" }}>
-      <CardMedia component="img" height="140" image={attraction.image} alt={attraction.name} />
+      <CardMedia
+        component="img"
+        height="140"
+        image={imageSrc}
+        alt={attraction.name}
+      />
       <CardContent>
         <Typography variant="h6" fontWeight="bold">
           {attraction.name}
@@ -23,12 +30,15 @@ const AttractionCard = ({ attraction }) => {
         <Typography variant="body2" color="textSecondary">
           {attraction.description}
         </Typography>
-        <Typography variant="body2" style={{ fontWeight: "bold", marginTop: "8px" }}>
-          Rating: ⭐ {attraction.rating} | Price: ${attraction.price}
+        <Typography variant="body2" style={{ marginTop: "4px" }}>
+          <strong>Type:</strong> {attraction.type} | <strong>Location:</strong> {attraction.location}
         </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
+        <Typography variant="body2" style={{ fontWeight: "bold", marginTop: "8px" }}>
+          Rating: ⭐ {attraction.rating}
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
           style={{ marginTop: "12px", width: "100%" }}
           onClick={handleBooking}
         >
